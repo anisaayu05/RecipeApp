@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -12,13 +13,17 @@ void main() async {
   await Firebase.initializeApp(); // Inisialisasi Firebase
   await GetStorage.init(); // Inisialisasi GetStorage
 
+  // Cek user langsung di sini
+  final User? user = FirebaseAuth.instance.currentUser;
+  final String initial = (user != null) ? Routes.HOME : Routes.LOGIN;
+
   Get.put(FavoriteController());
   Get.put(RecipeController());
   runApp(
     GetMaterialApp(
       debugShowCheckedModeBanner: false, // Menghilangkan banner debug
       title: "Recipe App",
-      initialRoute: AppPages.INITIAL,
+      initialRoute: initial,
       getPages: AppPages.routes,
       theme: ThemeData(
         // Define the color scheme for the app

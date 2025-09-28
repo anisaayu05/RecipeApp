@@ -4,11 +4,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:local_auth/local_auth.dart';
 import 'package:video_player/video_player.dart';
 
 import 'gallery_view.dart';
@@ -28,7 +26,6 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
   final TextEditingController _addressController = TextEditingController();
   final TextEditingController _dobController = TextEditingController();
   final TextEditingController _bioController = TextEditingController();
-  final LocalAuthentication _localAuth = LocalAuthentication();
   File? _profileImage;
 
   bool _isEditing = false;
@@ -40,7 +37,6 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-    _initializeUserData();
   }
 
   @override
@@ -167,7 +163,6 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
           'dob': '',
           'bio': '',
           'profileImage': 'null',
-          'fingerprintRegistered': false,
         });
         _showUpdateNotification('Profile data cleared successfully');
       } catch (e) {
@@ -248,76 +243,6 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
       }
     }
   }
-
-  Future<void> _initializeUserData() async {
-  final User? user = _auth.currentUser;
-  if (user != null) {
-    final userDoc = _firestore.collection('users').doc(user.uid);
-
-    try {
-      final docSnapshot = await userDoc.get();
-      if (!docSnapshot.exists || !docSnapshot.data()!.containsKey('fingerprintRegistered')) {
-        // Jika dokumen tidak ada atau field belum ada, tambahkan field fingerprintRegistered
-        await userDoc.set({
-          'fingerprintRegistered': false,
-        }, SetOptions(merge: true));
-      }
-    } catch (e) {
-      print("Error initializing user data: $e");
-    }
-  }
-}
-
-  Future<void> _registerFingerprint() async {
-  try {
-    // Cek apakah perangkat mendukung biometrik
-    bool canCheckBiometrics = await _localAuth.canCheckBiometrics;
-
-    if (!canCheckBiometrics) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Perangkat ini tidak mendukung biometrik')),
-      );
-      return;
-    }
-
-    // Autentikasi sidik jari pengguna
-    bool isAuthenticated = await _localAuth.authenticate(
-      localizedReason: 'Daftarkan fingerprint untuk autentikasi',
-      options: AuthenticationOptions(
-        useErrorDialogs: true,
-        stickyAuth: true,
-      ),
-    );
-
-    if (isAuthenticated) {
-      // Simpan status fingerprint di Firestore
-      final User? user = _auth.currentUser;
-      if (user != null) {
-        await _firestore.collection('users').doc(user.uid).update({
-          'fingerprintRegistered': true,
-        });
-
-        // Perbarui UI setelah fingerprint berhasil didaftarkan
-        setState(() {
-          // Status fingerprint sudah terdaftar
-        });
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Fingerprint berhasil didaftarkan')),
-        );
-      }
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Autentikasi fingerprint dibatalkan')),
-      );
-    }
-  } on PlatformException catch (e) {
-    print("Error registering fingerprint: $e");
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Terjadi kesalahan saat mendaftarkan fingerprint: ${e.message}')),
-    );
-  }
-}
 
 
 Future<Position> getCurrentLocation() async {
@@ -560,33 +485,6 @@ Future<Position> getCurrentLocation() async {
                                     MaterialPageRoute(builder: (context) => LocationView()),
                                   );
                                 },
-                              ),
-                            ),
-                          ),
-                          Card(
-                            elevation: 5,
-                            child: ListTile(
-                              title: Text('Fingerprint'),
-                              subtitle: FutureBuilder<DocumentSnapshot>(
-                                future: _firestore.collection('users').doc(user.uid).get(),
-                                builder: (context, snapshot) {
-                                  if (snapshot.connectionState == ConnectionState.waiting) {
-                                    return Text('Memeriksa status...');
-                                  }
-
-                                  if (snapshot.hasError || !snapshot.hasData) {
-                                    return Text('Gagal memuat status fingerprint');
-                                  }
-
-                                  bool isRegistered = snapshot.data!['fingerprintRegistered'] ?? false;
-                                  return Text(isRegistered
-                                      ? 'Fingerprint terdaftar'
-                                      : 'Fingerprint belum terdaftar');
-                                },
-                              ),
-                              trailing: IconButton(
-                                icon: Icon(Icons.fingerprint),
-                                onPressed: _registerFingerprint,
                               ),
                             ),
                           ),

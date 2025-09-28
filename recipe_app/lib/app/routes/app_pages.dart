@@ -14,14 +14,19 @@ import 'package:recipe_app/app/modules/home/views/view_all_page.dart'; // Import
 import 'package:recipe_app/app/modules/meal_plan/bindings/meal_plan_binding.dart';
 import 'package:recipe_app/app/modules/meal_plan/views/meal_plan_view.dart';
 import 'package:recipe_app/app/modules/upload/bindings/upload_binding.dart'; // Import UploadBinding
-import 'package:recipe_app/app/modules/upload/views/upload_view.dart'; // Import UploadView
+import 'package:recipe_app/app/modules/upload/views/upload_view.dart';
+import 'package:recipe_app/splash_screen.dart'; // Import UploadView
 
 part 'app_routes.dart';
 
 class AppPages {
-  static const INITIAL = Routes.LOGIN;
+  static const INITIAL = Routes.SPLASH;
 
   static final routes = [
+    GetPage(
+      name: Routes.SPLASH,
+      page: () => const SplashScreen(),
+    ),
     GetPage(
       name: _Paths.LOGIN,
       page: () => LoginView(),

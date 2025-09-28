@@ -106,7 +106,7 @@ class LocationView extends GetView<ProfileController> {
                           controller.currentPosition.value!.latitude,
                           controller.currentPosition.value!.longitude,
                         ),
-                        builder: (ctx) => const Icon(
+                        child: const Icon(
                           Icons.location_pin,
                           color: Colors.red,
                           size: 40,
