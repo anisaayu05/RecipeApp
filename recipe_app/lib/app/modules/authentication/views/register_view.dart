@@ -5,7 +5,7 @@ import '../../../routes/app_pages.dart';
 import '../controllers/register_controller.dart';
 
 class RegisterView extends GetView<RegisterController> {
-  final TextEditingController nameController = TextEditingController(); // Tambahkan controller untuk nama
+  final TextEditingController nameController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
 
@@ -28,17 +28,18 @@ class RegisterView extends GetView<RegisterController> {
               children: [
                 // Logo Animasi
                 AnimatedContainer(
-                  duration: Duration(seconds: 1),
+                  duration: const Duration(seconds: 1),
                   curve: Curves.bounceInOut,
-                  child: Icon(
+                  child: const Icon(
                     Icons.person_add_alt_1,
                     size: 100,
                     color: Colors.white,
                   ),
                 ),
-                SizedBox(height: 32),
+                const SizedBox(height: 32),
+
                 // Judul
-                Text(
+                const Text(
                   'Create Your Account',
                   style: TextStyle(
                     fontSize: 30,
@@ -47,92 +48,102 @@ class RegisterView extends GetView<RegisterController> {
                     letterSpacing: 1.2,
                   ),
                 ),
-                SizedBox(height: 16),
-                // Input Nama
-                _buildTextField(
-                  controller: nameController, // Tambahkan input untuk nama
+                const SizedBox(height: 16),
+
+                // Input Nama + Info
+                _buildLabeledField(
+                  controller: nameController,
                   hintText: 'Name',
                   icon: Icons.person,
+                  helperText: 'Minimal 4 karakter',
                 ),
-                SizedBox(height: 16),
-                // Input Email
-                _buildTextField(
+                const SizedBox(height: 16),
+
+                // Input Email + Info
+                _buildLabeledField(
                   controller: emailController,
                   hintText: 'Email',
                   icon: Icons.email,
+                  helperText: 'Gunakan format yang valid, misalnya: nama@gmail.com',
                 ),
-                SizedBox(height: 16),
-                // Input Password
-                _buildTextField(
+                const SizedBox(height: 16),
+
+                // Input Password + Info
+                _buildLabeledField(
                   controller: passwordController,
                   hintText: 'Password',
                   icon: Icons.lock,
                   obscureText: true,
+                  helperText:
+                      'Minimal 8 karakter, mengandung huruf besar, huruf kecil, dan angka',
                 ),
-                SizedBox(height: 24),
+                const SizedBox(height: 24),
+
                 // Tombol Register
                 ElevatedButton(
                   onPressed: () => controller.registerUser(
-                    nameController.text, // Tambahkan parameter nama
+                    nameController.text,
                     emailController.text,
                     passwordController.text,
                   ),
-                  child: Text(
-                    'Register',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
                   style: ElevatedButton.styleFrom(
-                    padding: EdgeInsets.symmetric(horizontal: 60, vertical: 15),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 60, vertical: 15),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(30),
                     ),
                     backgroundColor: Colors.white,
                     foregroundColor: Colors.deepOrange.shade900,
                   ),
+                  child: const Text(
+                    'Register',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
                 ),
-                SizedBox(height: 24),
-                // Divider dengan tulisan "or"
+
+                const SizedBox(height: 24),
+
+                // Divider
                 Row(
-                  children: [
+                  children: const [
                     Expanded(child: Divider(color: Colors.white)),
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                      child: Text(
-                        'or',
-                        style: TextStyle(color: Colors.white),
-                      ),
+                      padding: EdgeInsets.symmetric(horizontal: 8.0),
+                      child: Text('or', style: TextStyle(color: Colors.white)),
                     ),
                     Expanded(child: Divider(color: Colors.white)),
                   ],
                 ),
-                SizedBox(height: 24),
-                // Tombol Login dengan Google
+                const SizedBox(height: 24),
+
+                // Tombol Login Google
                 ElevatedButton(
                   onPressed: () {
-                    // Integrasi login Google di sini
+                    // Tambahkan integrasi Google Login di sini
                   },
                   style: ElevatedButton.styleFrom(
-                    elevation: 0, // Menghilangkan bayangan
-                    backgroundColor: Colors.white, // Warna latar belakang putih
+                    elevation: 0,
+                    backgroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(18), // Radius untuk tombol
-                      side: BorderSide(color: Colors.grey.shade300), // Border abu-abu terang
+                      borderRadius: BorderRadius.circular(18),
+                      side: BorderSide(color: Colors.grey.shade300),
                     ),
-                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   ),
                   child: Row(
-                    mainAxisSize: MainAxisSize.min, // Sesuaikan dengan konten
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Image.asset(
-                        'assets/images/google.png', // Masukkan gambar logo Google di folder assets
-                        height: 24, // Ukuran ikon
+                        'assets/images/google.png',
+                        height: 24,
                         width: 24,
                       ),
-                      SizedBox(width: 10), // Jarak antara logo dan teks
-                      Text(
+                      const SizedBox(width: 10),
+                      const Text(
                         'Login with Google',
                         style: TextStyle(
-                          color: Colors.black, // Teks berwarna hitam
+                          color: Colors.black,
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
                         ),
@@ -140,11 +151,13 @@ class RegisterView extends GetView<RegisterController> {
                     ],
                   ),
                 ),
-                SizedBox(height: 16),
-                // Tombol Login untuk redirect ke halaman login
+
+                const SizedBox(height: 16),
+
+                // Tombol Login
                 TextButton(
                   onPressed: () => Get.toNamed(Routes.LOGIN),
-                  child: Text(
+                  child: const Text(
                     'Already have an account? Login',
                     style: TextStyle(color: Colors.white),
                   ),
@@ -157,29 +170,48 @@ class RegisterView extends GetView<RegisterController> {
     );
   }
 
-  // Fungsi untuk membangun textfield dengan style seragam
-  Widget _buildTextField({
+  // Custom widget dengan teks bantuan di bawah field
+  Widget _buildLabeledField({
     required TextEditingController controller,
     required String hintText,
     required IconData icon,
+    String? helperText,
     bool obscureText = false,
   }) {
-    return TextField(
-      controller: controller,
-      decoration: InputDecoration(
-        hintText: hintText,
-        hintStyle: TextStyle(color: Colors.white.withOpacity(0.8)),
-        prefixIcon: Icon(icon, color: Colors.white),
-        filled: true,
-        fillColor: Colors.white.withOpacity(0.3),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(30.0),
-          borderSide: BorderSide.none,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        TextField(
+          controller: controller,
+          obscureText: obscureText,
+          keyboardType: hintText == 'Email'
+              ? TextInputType.emailAddress
+              : TextInputType.text,
+          decoration: InputDecoration(
+            hintText: hintText,
+            hintStyle: TextStyle(color: Colors.white.withOpacity(0.8)),
+            prefixIcon: Icon(icon, color: Colors.white),
+            filled: true,
+            fillColor: Colors.white.withOpacity(0.3),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(30.0),
+              borderSide: BorderSide.none,
+            ),
+          ),
+          style: const TextStyle(color: Colors.white),
         ),
-      ),
-      style: TextStyle(color: Colors.white),
-      obscureText: obscureText,
-      keyboardType: hintText == 'Email' ? TextInputType.emailAddress : TextInputType.text,
+        if (helperText != null) ...[
+          const SizedBox(height: 6),
+          Text(
+            helperText,
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.9),
+              fontSize: 12,
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+        ],
+      ],
     );
   }
 }

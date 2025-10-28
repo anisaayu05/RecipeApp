@@ -10,6 +10,7 @@ import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../connection/controllers/connection_controller.dart';
 
@@ -41,47 +42,101 @@ class UploadController extends GetxController {
   RxList<String> ingredientList = RxList<String>([]);
   var isGlutenFree = false.obs;
 
-  bool validateForm() {
-    if (mealNameController.text.trim().isEmpty ||
-        caloriesController.text.trim().isEmpty ||
-        timeController.text.trim().isEmpty ||
-        selectedCategory.value.isEmpty ||
-        selectedArea.value.isEmpty ||
-        ingredients.isEmpty ||
-        instructions.isEmpty ||
-        imageUrl.value == null) {
-      Get.snackbar('Error', 'Please fill in all required fields ❌');
-      return false;
-    }
-    return true;
+ bool validateForm() {
+  final name = mealNameController.text.trim();
+  final calories = caloriesController.text.trim();
+  final time = timeController.text.trim();
+
+  if (name.isEmpty ||
+      calories.isEmpty ||
+      time.isEmpty ||
+      selectedCategory.value.isEmpty ||
+      selectedArea.value.isEmpty ||
+      ingredients.isEmpty ||
+      instructions.isEmpty ||
+      (localImagePath.value == null || localImagePath.value!.isEmpty)) {
+    Get.snackbar('Error', 'Please fill in all required fields ❌');
+    return false;
   }
+
+  if (name.length < 3) {
+    Get.snackbar('Invalid Name', 'Recipe name must be at least 3 characters long ⚠️');
+    return false;
+  }
+
+  if (!RegExp(r'^\d+$').hasMatch(time)) {
+    Get.snackbar('Invalid Time', 'Time must contain numbers only ⏱️');
+    return false;
+  }
+
+  if (!RegExp(r'^-?\d+$').hasMatch(calories)) {
+  Get.snackbar('Invalid Calories', 'Calories must contain numbers only 🔢');
+  return false;
+}
+
+final caloriesValue = int.tryParse(calories) ?? 0;
+if (caloriesValue < 1) {
+  Get.snackbar('Invalid Calories', 'Calories must be greater than zero 🚫');
+  return false;
+}
+
+if (caloriesValue > 5000) {
+  Get.snackbar('Invalid Calories', 'Calories out of valid range ⚠️ (1–5000)');
+  return false;
+}
+
+  final ext = localImagePath.value!.split('.').last.toLowerCase();
+  if (ext != 'png' && ext != 'jpg' && ext != 'jpeg') {
+    Get.snackbar('Invalid Image', 'Only PNG and JPG images are allowed 🖼️');
+    return false;
+  }
+
+  return true;
+}
+
 
   RxList<Map<String, dynamic>> savedMeals = RxList<Map<String, dynamic>>([]);
   final ConnectionController connectionController = Get.find<ConnectionController>();
   @override
-  void onInit() {
-    super.onInit();
-    fetchCategories();
-    fetchAreas();
-    fetchIngredients();
-    loadSavedMealsFromFirestore();
-    checkOfflineDataAndUpload();
-    
+  @override
+void onInit() {
+  super.onInit();
+  Future.microtask(() async {
+    await _initData();
+  });
+}
+
+Future<void> _initData() async {
+  try {
+    await Future.wait([
+      fetchCategories(),
+      fetchAreas(),
+      fetchIngredients(),
+      loadSavedMealsFromFirestore(),
+    ]);
+    await checkOfflineDataAndUpload();
+  } catch (e) {
+    print("⚠️ Error saat inisialisasi data UploadController: $e");
   }
+}
 
   Future<void> fetchCategories() async {
-    final response = await http.get(
-        Uri.parse('https://www.themealdb.com/api/json/v1/1/list.php?c=list'));
+  try {
+    final response = await http
+        .get(Uri.parse('https://www.themealdb.com/api/json/v1/1/list.php?c=list'))
+        .timeout(const Duration(seconds: 8));
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       final List categoriesData = data['meals'];
-      categories.addAll(categoriesData
-          .map((category) => category['strCategory'] as String)
-          .toList());
-    } else {
-      Get.snackbar('Error', 'Failed to fetch categories.');
+      categories.assignAll(
+        categoriesData.map((e) => e['strCategory'] as String).toList(),
+      );
     }
+  } catch (e) {
+    print('⚠️ fetchCategories error: $e');
   }
+}
+
 
   Future<void> deleteMeal(String mealId, String? imageUrl) async {
     try {
@@ -184,49 +239,68 @@ class UploadController extends GetxController {
   Future<File?> pickImage() async {
   try {
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+
     if (pickedFile != null) {
-      imageUrl.value = pickedFile.path;
-      return File(pickedFile.path);
+      final ext = pickedFile.path.split('.').last.toLowerCase();
+      if (ext != 'png' && ext != 'jpg' && ext != 'jpeg') {
+        Get.snackbar('Invalid Format', 'Only PNG and JPG images are allowed ❌');
+        return null;
+      }
+
+      localImagePath.value = pickedFile.path;
+      imageUrl.value = null;
+      print('✅ Image selected: ${pickedFile.path}');
+      Get.snackbar('Success', 'Image selected successfully ✅');
+      return File(pickedFile.path); // ✅ return file-nya
     } else {
-      Get.snackbar('No Image Selected', 'Please select an image.');
+      Get.snackbar('No Image', 'No image selected.');
+      print('⚠️ No image selected');
       return null;
     }
   } catch (e) {
     Get.snackbar('Error', 'Failed to pick image: $e');
+    print('❌ Error picking image: $e');
     return null;
   }
 }
 
- Future<String?> uploadImageToFirebase(String mealId) async {
-  if (imageUrl.value == null) {
-    Get.snackbar('Error', 'No image selected to upload.');
-    return null;
-  }
 
+Future<void> uploadImage(String mealName, File imageFile) async {
   try {
-    final current = imageUrl.value!;
-    if (current.startsWith('http')) return current;
+    if (!imageFile.existsSync()) {
+      throw Exception("File image tidak ditemukan.");
+    }
 
+    final ref = FirebaseStorage.instance
+        .ref()
+        .child('recipes')
+        .child('${mealName}_${DateTime.now().millisecondsSinceEpoch}.jpg');
+
+    final uploadTask = await ref.putFile(imageFile);
+    final downloadUrl = await ref.getDownloadURL();
+
+    imageUrl.value = downloadUrl;
+    print('✅ Image uploaded successfully: $downloadUrl');
+  } catch (e) {
+    print('❌ Upload failed: $e');
+    Get.snackbar('Error', 'Gagal mengupload gambar: $e');
+  }
+}
+
+
+ Future<String?> uploadImageToFirebase(String mealId, File file) async {
+  try {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return null;
 
-    final file = File(current);
-    if (!await file.exists()) return null;
-
-    String ext = current.split('.').last;
-    if (ext.isEmpty || ext.length > 5) ext = 'jpg';
-
-    final uniqueId = DateTime.now().millisecondsSinceEpoch.toString();
-    final storagePath = 'uploads/$uid/$mealId/$uniqueId.$ext';
-
-    final storageRef = FirebaseStorage.instance.ref().child(storagePath);
-    final uploadTask = storageRef.putFile(
-      file,
-      SettableMetadata(contentType: 'image/$ext'),
-    );
-
-    final snapshot = await uploadTask.whenComplete(() {});
-    return await snapshot.ref.getDownloadURL();
+    final ext = file.path.split('.').last;
+    final storageRef = FirebaseStorage.instance
+        .ref()
+        .child('uploads/$uid/$mealId.${ext.isEmpty ? "jpg" : ext}');
+    
+    await storageRef.putFile(file);
+    final url = await storageRef.getDownloadURL();
+    return url;
   } catch (e) {
     Get.snackbar('Upload Error', e.toString());
     return null;
@@ -436,42 +510,53 @@ Future<void> saveMealLocally(Map<String, dynamic> mealData) async {
   }
 
  Future<void> saveMeal() async {
-    if (!validateForm()) return; // ✅ Stop kalau ada yang kosong
-
-    isLoading.value = true; // ✅ Tampilkan loading
-    try {
-      final mealData = {
-        'strMeal': mealNameController.text.trim(),
-        'strCalories': caloriesController.text.trim(),
-        'strTime': timeController.text.trim(),
-        'strCategory': selectedCategory.value,
-        'strArea': selectedArea.value,
-        'strInstructions': instructions.join("\n"),
-        'strMealThumb': imageUrl.value,
-        'strTags': tagsController.text.trim(),
-        'strYoutube': youtubeLinkController.text.trim(),
-        'ingredients': ingredients,
-        'type': 'uploadRecipe',
-        'strIsGlutenFree': isGlutenFree.value,
-      };
-
-      bool isConnected = await checkInternetConnection();
-      if (isConnected) {
-        await saveMealToFirestore(mealData);
-        Get.snackbar('Success', 'Recipe saved successfully! 🎉');
-      } else {
-        await saveMealLocally(mealData);
-        Get.snackbar('Offline Mode', 'Recipe saved locally. 🔒');
-      }
-
-      clearFields();
-      await loadMeals();
-    } catch (e) {
-      Get.snackbar('Error', 'An error occurred while saving the recipe ❌');
-    } finally {
-      isLoading.value = false; // ✅ Sembunyikan loading
-    }
+  // ✅ Jalankan validasi terlebih dahulu
+  if (!validateForm()) {
+    return; // langsung keluar kalau tidak valid
   }
+
+  // ✅ Cegah lanjut kalau imageUrl belum ada
+  if (localImagePath.value == null || localImagePath.value!.isEmpty) {
+    Get.snackbar('Error', 'Please upload a recipe image before saving.');
+    return;
+  }
+  isLoading.value = true;
+
+  try {
+    final mealData = {
+      'strMeal': mealNameController.text.trim(),
+      'strCalories': caloriesController.text.trim(),
+      'strTime': timeController.text.trim(),
+      'strCategory': selectedCategory.value,
+      'strArea': selectedArea.value,
+      'strInstructions': instructions.isEmpty ? '' : instructions.join("\n"),
+      'strMealThumb': imageUrl.value,
+      'strTags': tagsController.text.trim(),
+      'strYoutube': youtubeLinkController.text.trim(),
+      'ingredients': ingredients.isEmpty ? [] : ingredients,
+      'type': 'uploadRecipe',
+      'strIsGlutenFree': isGlutenFree.value,
+      'createdAt': FieldValue.serverTimestamp(),
+    };
+
+    final isConnected = await checkInternetConnection();
+    if (isConnected) {
+      await saveMealToFirestore(mealData);
+      Get.snackbar('Success', 'Recipe saved successfully! 🎉');
+    } else {
+      await saveMealLocally(mealData);
+      Get.snackbar('Offline Mode', 'Recipe saved locally. 🔒');
+    }
+
+    clearFields();
+    await loadMeals();
+  } catch (e) {
+    Get.snackbar('Error', 'An error occurred while saving the recipe ❌');
+    print("❌ Save Meal Error: $e");
+  } finally {
+    isLoading.value = false;
+  }
+}
 
 Future<void> saveImageLocally(XFile pickedFile) async {
     try {
@@ -556,26 +641,39 @@ Future<void> loadSavedMealsFromLocal() async {
 
 
   Future<String?> saveMealToFirestore(Map<String, dynamic> meal) async {
+  print("📤 Starting saveMealToFirestore...");
+
   final docRef = FirebaseFirestore.instance.collection('meals').doc();
   final mealId = docRef.id;
-
   final uid = FirebaseAuth.instance.currentUser?.uid;
-
-  final downloadUrl = await uploadImageToFirebase(mealId);
-
-  meal['idMeal'] = mealId;
-  meal['uid'] = uid;
-  meal['strMealThumb'] = downloadUrl ?? '';
+  String? finalUrl;
 
   try {
+    if (localImagePath.value != null && localImagePath.value!.isNotEmpty) {
+      final file = File(localImagePath.value!);
+      finalUrl = await uploadImageToFirebase(mealId, file);
+    } else {
+      Get.snackbar('Error', 'No local image found.');
+      return null;
+    }
+
+    meal['idMeal'] = mealId;
+    meal['uid'] = uid;
+    meal['strMealThumb'] = finalUrl ?? '';
+
     await docRef.set(meal);
-    Get.snackbar('Success', 'Recipe saved to Firestore successfully!');
-    return mealId; // ✅ kembalikan ID
+    imageUrl.value = finalUrl; // ✅ baru isi di sini
+
+    print("✅ Recipe saved to Firestore successfully!");
+    Get.snackbar('Success', 'Recipe saved successfully! 🎉');
+    return mealId;
   } catch (e) {
+    print("❌ Firestore save failed: $e");
     Get.snackbar('Error', 'Failed to save recipe: $e');
     return null;
   }
 }
+
 
 
 Future<void> checkMealExistsAndUpdateImage(String mealId) async {
@@ -626,6 +724,20 @@ Future<void> uploadIngredientImage(int index) async {
   }
 }
 
+Future<void> launchYoutubeUrl(String? url) async {
+  if (url == null || url.trim().isEmpty) {
+    Get.snackbar('Error', 'No YouTube link available');
+    return;
+  }
+
+  final Uri uri = Uri.parse(url);
+  if (await canLaunchUrl(uri)) {
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
+  } else {
+    Get.snackbar('Error', 'Could not launch YouTube link');
+  }
+}
+
 Future<void> updateMealName(String mealId, String newName) async {
     await FirebaseFirestore.instance.collection('meals').doc(mealId).update({
       'strMeal': newName,
@@ -651,6 +763,7 @@ Future<void> updateMealName(String mealId, String newName) async {
   currentMeasureController.clear();
   currentInstructionController.clear();
   imageUrl.value = null;
+  localImagePath.value = null;
   instructions.clear();
   ingredients.clear();
   selectedCategory.value = '';

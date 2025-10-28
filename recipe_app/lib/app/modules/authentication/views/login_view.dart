@@ -26,14 +26,15 @@ class LoginView extends GetView<LoginController> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 // Icon Login
-                Icon(
+                const Icon(
                   Icons.login,
                   size: 100,
                   color: Colors.white,
                 ),
-                SizedBox(height: 32),
+                const SizedBox(height: 32),
+
                 // Judul
-                Text(
+                const Text(
                   'Welcome Back!',
                   style: TextStyle(
                     fontSize: 28,
@@ -41,84 +42,108 @@ class LoginView extends GetView<LoginController> {
                     color: Colors.white,
                   ),
                 ),
-                SizedBox(height: 16),
-                // Input Email
+                const SizedBox(height: 16),
+
+                // === Email Field ===
                 _buildTextField(
                   controller: emailController,
                   hintText: 'Email',
                   icon: Icons.email,
                 ),
-                SizedBox(height: 16),
-                // Input Password
+                const SizedBox(height: 6),
+                // Info Email
+                Text(
+                  'Gunakan email valid dengan format nama@gmail.com',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.8),
+                    fontSize: 13,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // === Password Field ===
                 _buildTextField(
                   controller: passwordController,
                   hintText: 'Password',
                   icon: Icons.lock,
                   obscureText: true,
                 ),
-                SizedBox(height: 24),
-                // Tombol Login
+                const SizedBox(height: 6),
+                // Info Password
+                Text(
+                  'Password minimal 8 karakter',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.8),
+                    fontSize: 13,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+
+                const SizedBox(height: 24),
+
+                // === Tombol Login ===
                 ElevatedButton(
                   onPressed: () => controller.loginUser(
                     emailController.text,
                     passwordController.text,
                   ),
-                  child: Text(
-                    'Login',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
                   style: ElevatedButton.styleFrom(
-                    padding: EdgeInsets.symmetric(horizontal: 60, vertical: 15),
+                    padding: const EdgeInsets.symmetric(horizontal: 60, vertical: 15),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(30),
                     ),
                     backgroundColor: Colors.white,
                     foregroundColor: Colors.deepOrange.shade900,
                   ),
+                  child: const Text(
+                    'Login',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
                 ),
-                SizedBox(height: 16),
-                // Divider dengan teks "or"
+
+                const SizedBox(height: 16),
+
+                // === Divider ===
                 Row(
-                  children: [
+                  children: const [
                     Expanded(child: Divider(color: Colors.white)),
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                      child: Text(
-                        'or',
-                        style: TextStyle(color: Colors.white),
-                      ),
+                      padding: EdgeInsets.symmetric(horizontal: 8.0),
+                      child: Text('or', style: TextStyle(color: Colors.white)),
                     ),
                     Expanded(child: Divider(color: Colors.white)),
                   ],
                 ),
-                SizedBox(height: 16),
-                // Tombol Login dengan Google
+                const SizedBox(height: 16),
+
+                // === Tombol Login Google ===
                 ElevatedButton(
                   onPressed: () {
                     // Integrasi login Google di sini
                   },
                   style: ElevatedButton.styleFrom(
-                    elevation: 0, // Menghilangkan bayangan
-                    backgroundColor: Colors.white, // Warna latar belakang putih
+                    elevation: 0,
+                    backgroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(18), // Radius untuk tombol
-                      side: BorderSide(color: Colors.grey.shade300), // Border abu-abu terang
+                      borderRadius: BorderRadius.circular(18),
+                      side: BorderSide(color: Colors.grey.shade300),
                     ),
-                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   ),
                   child: Row(
-                    mainAxisSize: MainAxisSize.min, // Sesuaikan dengan konten
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Image.asset(
-                        'assets/images/google.png', // Masukkan gambar logo Google di folder assets
-                        height: 24, // Ukuran ikon
+                        'assets/images/google.png',
+                        height: 24,
                         width: 24,
                       ),
-                      SizedBox(width: 10), // Jarak antara logo dan teks
-                      Text(
+                      const SizedBox(width: 10),
+                      const Text(
                         'Login with Google',
                         style: TextStyle(
-                          color: Colors.black, // Teks berwarna hitam
+                          color: Colors.black,
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
                         ),
@@ -126,11 +151,13 @@ class LoginView extends GetView<LoginController> {
                     ],
                   ),
                 ),
-                SizedBox(height: 16),
-                // Tombol Register
+
+                const SizedBox(height: 16),
+
+                // === Tombol Register ===
                 TextButton(
                   onPressed: () => Get.toNamed(Routes.REGISTER),
-                  child: Text(
+                  child: const Text(
                     'Don\'t have an account? Register',
                     style: TextStyle(color: Colors.white),
                   ),
@@ -143,7 +170,7 @@ class LoginView extends GetView<LoginController> {
     );
   }
 
-  // Fungsi untuk membuat TextField dengan style seragam
+  // === Widget Field Input ===
   Widget _buildTextField({
     required TextEditingController controller,
     required String hintText,
@@ -162,10 +189,13 @@ class LoginView extends GetView<LoginController> {
           borderRadius: BorderRadius.circular(30.0),
           borderSide: BorderSide.none,
         ),
+        contentPadding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 20.0),
       ),
-      style: TextStyle(color: Colors.white),
+      style: const TextStyle(color: Colors.white),
       obscureText: obscureText,
-      keyboardType: hintText == 'Email' ? TextInputType.emailAddress : TextInputType.text,
+      keyboardType: hintText == 'Email'
+          ? TextInputType.emailAddress
+          : TextInputType.text,
     );
   }
 }

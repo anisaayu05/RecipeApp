@@ -691,6 +691,56 @@ class _MyRecipeViewState extends State<MyRecipeView> {
                       }
                     }),
                     const SizedBox(height: 12),
+                    if (_cachedMeal['strTags'] != null &&
+                      _cachedMeal['strTags'].toString().trim().isNotEmpty)
+                    Container(
+                      margin: const EdgeInsets.symmetric(vertical: 6),
+                      padding: const EdgeInsets.all(12),
+                      decoration: pillDecoration(color: Colors.white),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.tag, color: Colors.orange),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              _cachedMeal['strTags'],
+                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                  if (_cachedMeal['strYoutube'] != null &&
+                      _cachedMeal['strYoutube'].toString().trim().isNotEmpty)
+                    GestureDetector(
+                      onTap: () {
+                        // buka link youtube
+                        final url = _cachedMeal['strYoutube'];
+                        uploadController.launchYoutubeUrl(url); // bikin function di controller
+                      },
+                      child: Container(
+                        margin: const EdgeInsets.symmetric(vertical: 6),
+                        padding: const EdgeInsets.all(12),
+                        decoration: pillDecoration(color: Colors.white),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.play_circle_fill, color: Colors.red),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                "Watch on YouTube",
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.red,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),

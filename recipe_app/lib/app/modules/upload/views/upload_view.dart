@@ -13,7 +13,6 @@ class UploadView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     Get.put(UploadController());
-    Get.find<UploadController>();
 
     return DefaultTabController(
       length: 2,
@@ -81,20 +80,86 @@ class _CreateRecipeTab extends StatelessWidget {
         children: [
           Obx(() => _buildImagePicker(c)),
           const SizedBox(height: 20),
-          _roundedField(controller: c.mealNameController, hint: 'Meal Name', icon: Icons.fastfood),
-          const SizedBox(height: 16),
-          _roundedField(controller: c.caloriesController, hint: 'Calories', icon: Icons.local_fire_department, type: TextInputType.number),
-          const SizedBox(height: 16),
-          _roundedField(controller: c.timeController, hint: 'Preparation Time (mins)', icon: Icons.timer, type: TextInputType.number),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(child: Obx(() => _roundedDropdown(label: 'Category', value: c.selectedCategory.value, items: c.categories, onChanged: (v) => c.selectedCategory.value = v ?? ''))),
-              const SizedBox(width: 16),
-              Expanded(child: Obx(() => _roundedDropdown(label: 'Area', value: c.selectedArea.value, items: c.areas, onChanged: (v) => c.selectedArea.value = v ?? ''))),
-            ],
+
+          // Meal Name
+          _roundedField(
+            controller: c.mealNameController,
+            hint: 'Meal Name',
+            icon: Icons.fastfood,
+          ),
+          const Padding(
+            padding: EdgeInsets.only(top: 6, left: 8),
+            child: Text(
+              'Recipe name must be at least 3 characters long.',
+              style: TextStyle(color: Colors.white70, fontSize: 13),
+            ),
           ),
           const SizedBox(height: 16),
+
+          // Calories
+          _roundedField(
+            controller: c.caloriesController,
+            hint: 'Calories',
+            icon: Icons.local_fire_department,
+            type: TextInputType.number,
+          ),
+          const Padding(
+            padding: EdgeInsets.only(top: 6, left: 8),
+            child: Text(
+              'Only numeric values are allowed for calories.',
+              style: TextStyle(color: Colors.white70, fontSize: 13),
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Preparation Time
+          _roundedField(
+            controller: c.timeController,
+            hint: 'Preparation Time (mins)',
+            icon: Icons.timer,
+            type: TextInputType.number,
+          ),
+          const Padding(
+            padding: EdgeInsets.only(top: 6, left: 8),
+            child: Text(
+              'Time must be entered in minutes (numbers only).',
+              style: TextStyle(color: Colors.white70, fontSize: 13),
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Category & Area
+          Row(
+            children: [
+              Expanded(
+                child: Obx(() => _roundedDropdown(
+                      label: 'Category',
+                      value: c.selectedCategory.value,
+                      items: c.categories,
+                      onChanged: (v) => c.selectedCategory.value = v ?? '',
+                    )),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Obx(() => _roundedDropdown(
+                      label: 'Area',
+                      value: c.selectedArea.value,
+                      items: c.areas,
+                      onChanged: (v) => c.selectedArea.value = v ?? '',
+                    )),
+              ),
+            ],
+          ),
+          const Padding(
+            padding: EdgeInsets.only(top: 6, left: 8),
+            child: Text(
+              'Please select both category and area.',
+              style: TextStyle(color: Colors.white70, fontSize: 13),
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Gluten-free
           Obx(() => GestureDetector(
                 onTap: () => c.isGlutenFree.value = !c.isGlutenFree.value,
                 child: Container(
@@ -109,7 +174,6 @@ class _CreateRecipeTab extends StatelessWidget {
                     ),
                   ),
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.start,
                     children: [
                       AnimatedContainer(
                         duration: const Duration(milliseconds: 250),
@@ -136,35 +200,49 @@ class _CreateRecipeTab extends StatelessWidget {
                   ),
                 ),
               )),
+          const Padding(
+            padding: EdgeInsets.only(top: 6, left: 8),
+            child: Text(
+              '✅ Check this if your recipe contains no gluten.',
+              style: TextStyle(color: Colors.white70, fontSize: 13),
+            ),
+          ),
           const SizedBox(height: 20),
+
+          // Ingredients & Instructions section tetap sama
           _sectionTitle('Ingredients'),
           Obx(() => _ingredientList(c)),
           const SizedBox(height: 12),
           _addIngredientFields(c),
           const SizedBox(height: 20),
+
           _sectionTitle('Instructions'),
           Obx(() => _instructionList(c)),
           const SizedBox(height: 12),
           _addInstructionField(c),
+
           const SizedBox(height: 20),
           _roundedField(controller: c.tagsController, hint: 'Tags (Optional)', icon: Icons.tag),
           const SizedBox(height: 16),
           _roundedField(controller: c.youtubeLinkController, hint: 'YouTube Link (Optional)', icon: Icons.link),
           const SizedBox(height: 32),
+
+          // Save Recipe button tetap sama
           Center(
             child: Obx(() => ElevatedButton(
-                  onPressed: c.isLoading.value
-                      ? null // disable tombol saat loading
-                      : () async {
-                          final id = c.mealNameController.text.trim();
+                  onPressed: c.isLoading.value ? null : () async {
+                    if (c.localImagePath.value == null || c.localImagePath.value!.isEmpty) {
+                      Get.snackbar('Error', 'Please upload an image before saving.');
+                      return;
+                    }
 
-                          if (c.imageUrl.value != null && c.imageUrl.value!.isNotEmpty) {
-                            final file = File(c.imageUrl.value!);
-                            await c.updateImage(id, file);
-                          }
-
-                          await c.saveMeal();
-                        },
+                    c.isLoading.value = true;
+                    try {
+                      await c.saveMeal();
+                    } finally {
+                      c.isLoading.value = false;
+                    }
+                  },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.white,
                     foregroundColor: const Color(0xFFFF7043),
@@ -191,6 +269,7 @@ class _CreateRecipeTab extends StatelessWidget {
     );
   }
 }
+
 
 // ================= MY RECIPES WITH FILTER =================
 class _MyRecipesMainTab extends StatelessWidget {
@@ -404,38 +483,49 @@ class _MyRecipesList extends StatelessWidget {
 
 // ================= Helper Widgets =================
 Widget _buildImagePicker(UploadController c) {
-  return GestureDetector(
-    onTap: () async => await c.pickImage(),
-    child: DottedBorder(
-      color: Colors.white,
-      strokeWidth: 1.8,
-      borderType: BorderType.RRect,
-      radius: const Radius.circular(20),
-      dashPattern: const [6, 4],
-      child: Container(
-        height: 180,
-        width: double.infinity,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          color: Colors.white.withOpacity(.1),
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      GestureDetector(
+        onTap: () async => await c.pickImage(),
+        child: DottedBorder(
+          color: Colors.white,
+          strokeWidth: 1.8,
+          borderType: BorderType.RRect,
+          radius: const Radius.circular(20),
+          dashPattern: const [6, 4],
+          child: Container(
+            height: 180,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              color: Colors.white.withOpacity(.1),
+            ),
+            child: (c.localImagePath.value != null && c.localImagePath.value!.isNotEmpty)
+                ? ClipRRect(
+                    borderRadius: BorderRadius.circular(20),
+                    child: Image.file(File(c.localImagePath.value!), fit: BoxFit.cover),
+                  )
+                : Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: const [
+                      Icon(Icons.camera_alt_outlined, size: 48, color: Colors.white70),
+                      SizedBox(height: 8),
+                      Text('Tap to add a photo', style: TextStyle(color: Colors.white70)),
+                    ],
+                  ),
+          ),
         ),
-        child: c.imageUrl.value != null
-            ? ClipRRect(
-                borderRadius: BorderRadius.circular(20),
-                child: Image.file(File(c.imageUrl.value!), fit: BoxFit.cover),
-              )
-            : Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: const [
-                  Icon(Icons.camera_alt_outlined, size: 48, color: Colors.white70),
-                  SizedBox(height: 8),
-                  Text('Tap to add a photo', style: TextStyle(color: Colors.white70)),
-                ],
-              ),
       ),
-    ),
+      const SizedBox(height: 6),
+      const Text(
+        'Upload image in PNG or JPG format only (max 5MB)',
+        style: TextStyle(color: Colors.white70, fontSize: 13),
+      ),
+    ],
   );
 }
+
 
 Widget _roundedField({
   required TextEditingController controller,
